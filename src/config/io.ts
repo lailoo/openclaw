@@ -199,7 +199,6 @@ export type DuplicateKeyWarning = { path: string; message: string };
  */
 export function detectDuplicateKeys(raw: string): DuplicateKeyWarning[] {
   const warnings: DuplicateKeyWarning[] = [];
-  const keyStack: Map<string, boolean>[] = [];
   const pathStack: string[] = [];
   let i = 0;
 
@@ -290,13 +289,11 @@ export function detectDuplicateKeys(raw: string): DuplicateKeyWarning[] {
 
   const parseObj = (): void => {
     i++;
-    const keys = new Map<string, boolean>();
-    keyStack.push(keys);
+    const keys = new Set<string>();
     while (i < raw.length) {
       skipWs();
       if (raw[i] === "}") {
         i++;
-        keyStack.pop();
         return;
       }
       const key = raw[i] === '"' || raw[i] === "'" ? readString() : readUnquoted();
@@ -308,7 +305,7 @@ export function detectDuplicateKeys(raw: string): DuplicateKeyWarning[] {
         const path = [...pathStack, key].join(".");
         warnings.push({ path, message: `Duplicate key "${key}"` });
       } else {
-        keys.set(key, true);
+        keys.add(key);
       }
       skipWs();
       if (raw[i] === ":") {
@@ -322,7 +319,6 @@ export function detectDuplicateKeys(raw: string): DuplicateKeyWarning[] {
         i++;
       }
     }
-    keyStack.pop();
   };
 
   skipWs();
