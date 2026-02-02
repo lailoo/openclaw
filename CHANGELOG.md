@@ -12,6 +12,7 @@ Docs: https://docs.openclaw.ai
 
 ### Fixes
 
+- Lint: fix oxlint errors in nodes-tool.ts and commands-ptt.ts. (#7412)
 - fix(webchat): respect user scroll position during streaming and refresh (#7226) (thanks @marcomarandiz)
 - Security: guard skill installer downloads with SSRF checks (block private/localhost URLs).
 - Media understanding: apply SSRF guardrails to provider fetches; allow private baseUrl overrides explicitly.
