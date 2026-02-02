@@ -437,7 +437,7 @@ const FIELD_HELP: Record<string, string> = {
     'Text suffix for cross-context markers (supports "{channel}").',
   "tools.message.broadcast.enabled": "Enable broadcast action (default: true).",
   "tools.web.search.enabled": "Enable the web_search tool (requires a provider API key).",
-  "tools.web.search.provider": 'Search provider ("brave" or "perplexity").',
+  "tools.web.search.provider": 'Search provider ("brave", "perplexity", or "tavily").',
   "tools.web.search.apiKey": "Brave Search API key (fallback: BRAVE_API_KEY env var).",
   "tools.web.search.maxResults": "Default number of results to return (1-10).",
   "tools.web.search.timeoutSeconds": "Timeout in seconds for web_search requests.",
@@ -448,6 +448,14 @@ const FIELD_HELP: Record<string, string> = {
     "Perplexity base URL override (default: https://openrouter.ai/api/v1 or https://api.perplexity.ai).",
   "tools.web.search.perplexity.model":
     'Perplexity model override (default: "perplexity/sonar-pro").',
+  "tools.web.search.tavily.apiKey": "Tavily API key (fallback: TAVILY_API_KEY env var).",
+  "tools.web.search.tavily.searchDepth":
+    'Tavily search depth: "basic", "advanced", "fast", or "ultra-fast" (default: "basic").',
+  "tools.web.search.tavily.includeAnswer":
+    "Include AI-generated answer in Tavily response (default: true).",
+  "tools.web.search.tavily.includeImages": "Include images in Tavily response (default: false).",
+  "tools.web.search.tavily.topic":
+    'Tavily search topic: "general", "news", or "finance" (default: "general").',
   "tools.web.fetch.enabled": "Enable the web_fetch tool (lightweight HTTP fetch).",
   "tools.web.fetch.maxChars": "Max characters returned by web_fetch (truncated).",
   "tools.web.fetch.timeoutSeconds": "Timeout in seconds for web_fetch requests.",

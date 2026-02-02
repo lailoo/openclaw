@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { __testing } from "./web-search.js";
 
-const { inferPerplexityBaseUrlFromApiKey, resolvePerplexityBaseUrl, normalizeFreshness } =
-  __testing;
+const {
+  inferPerplexityBaseUrlFromApiKey,
+  resolvePerplexityBaseUrl,
+  normalizeFreshness,
+  resolveTavilySearchDepth,
+} = __testing;
 
 describe("web_search perplexity baseUrl defaults", () => {
   it("detects a Perplexity key prefix", () => {
@@ -66,5 +70,25 @@ describe("web_search freshness normalization", () => {
     expect(normalizeFreshness("2024-13-01to2024-01-31")).toBeUndefined();
     expect(normalizeFreshness("2024-02-30to2024-03-01")).toBeUndefined();
     expect(normalizeFreshness("2024-03-10to2024-03-01")).toBeUndefined();
+  });
+});
+
+describe("web_search tavily searchDepth", () => {
+  it("accepts valid search depths", () => {
+    expect(resolveTavilySearchDepth({ searchDepth: "basic" })).toBe("basic");
+    expect(resolveTavilySearchDepth({ searchDepth: "advanced" })).toBe("advanced");
+    expect(resolveTavilySearchDepth({ searchDepth: "fast" })).toBe("fast");
+    expect(resolveTavilySearchDepth({ searchDepth: "ultra-fast" })).toBe("ultra-fast");
+  });
+
+  it("normalizes case", () => {
+    expect(resolveTavilySearchDepth({ searchDepth: "BASIC" })).toBe("basic");
+    expect(resolveTavilySearchDepth({ searchDepth: "Advanced" })).toBe("advanced");
+  });
+
+  it("defaults to basic for invalid values", () => {
+    expect(resolveTavilySearchDepth({ searchDepth: "invalid" })).toBe("basic");
+    expect(resolveTavilySearchDepth({})).toBe("basic");
+    expect(resolveTavilySearchDepth(undefined)).toBe("basic");
   });
 });

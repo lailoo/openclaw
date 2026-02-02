@@ -170,7 +170,9 @@ export const ToolPolicySchema = ToolPolicyBaseSchema.superRefine((value, ctx) =>
 export const ToolsWebSearchSchema = z
   .object({
     enabled: z.boolean().optional(),
-    provider: z.union([z.literal("brave"), z.literal("perplexity")]).optional(),
+    provider: z
+      .union([z.literal("brave"), z.literal("perplexity"), z.literal("tavily")])
+      .optional(),
     apiKey: z.string().optional(),
     maxResults: z.number().int().positive().optional(),
     timeoutSeconds: z.number().int().positive().optional(),
@@ -180,6 +182,23 @@ export const ToolsWebSearchSchema = z
         apiKey: z.string().optional(),
         baseUrl: z.string().optional(),
         model: z.string().optional(),
+      })
+      .strict()
+      .optional(),
+    tavily: z
+      .object({
+        apiKey: z.string().optional(),
+        searchDepth: z
+          .union([
+            z.literal("basic"),
+            z.literal("advanced"),
+            z.literal("fast"),
+            z.literal("ultra-fast"),
+          ])
+          .optional(),
+        includeAnswer: z.boolean().optional(),
+        includeImages: z.boolean().optional(),
+        topic: z.union([z.literal("general"), z.literal("news"), z.literal("finance")]).optional(),
       })
       .strict()
       .optional(),
