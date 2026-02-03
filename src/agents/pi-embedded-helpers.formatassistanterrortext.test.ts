@@ -35,6 +35,23 @@ describe("formatAssistantErrorText", () => {
       "The AI service is temporarily overloaded. Please try again in a moment.",
     );
   });
+  it("returns rate limit message instead of context overflow for rate limit errors", () => {
+    // Rate limit errors should not be misclassified as context overflow
+    const rateLimitSamples = [
+      "rate_limit_error: Too many requests",
+      '{"type":"error","error":{"type":"rate_limit_error","message":"This request would exceed the rate limit"}}',
+      "429 Too Many Requests",
+      "Error: rate limit exceeded",
+    ];
+    for (const sample of rateLimitSamples) {
+      const msg = makeAssistantError(sample);
+      const result = formatAssistantErrorText(msg);
+      expect(result).toBe(
+        "The AI service is temporarily overloaded. Please try again in a moment.",
+      );
+      expect(result).not.toContain("Context overflow");
+    }
+  });
   it("returns a recovery hint when tool call input is missing", () => {
     const msg = makeAssistantError("tool_use.input: Field required");
     const result = formatAssistantErrorText(msg);
