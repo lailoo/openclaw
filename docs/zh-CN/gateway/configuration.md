@@ -1446,7 +1446,7 @@ exec ssh -T gateway-host imsg "$@"
 
 ### `agents.defaults.skipBootstrap`
 
-禁用自动创建工作区引导文件（`AGENTS.md`、`SOUL.md`、`TOOLS.md`、`IDENTITY.md`、`USER.md` 和 `BOOTSTRAP.md`）。
+禁用自动创建工作区引导文件（`AGENTS.md`、`SOUL.md`、`TOOLS.md`、`IDENTITY.md`、`USER.md`、`HEARTBEAT.md`、`BOOTSTRAP.md` 和 `MEMORY.md`）。
 
 适用于工作区文件来自仓库的预置部署。
 
