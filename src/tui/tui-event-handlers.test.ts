@@ -249,20 +249,30 @@ describe("tui-event-handlers: handleAgentEvent", () => {
     });
 
     expect(chatLog.updateAssistant).toHaveBeenCalledWith("partial", runId);
-    chatLog.updateAssistant.mockClear();
 
-    // Simulate a race condition: final event arrives after runId is marked finalized
-    // (e.g., due to out-of-order events or duplicate/retry events)
-    // The final event should still be processed and render the response
+    // Send the first final event to finalize the run (puts runId into finalizedRuns)
     handleChatEvent({
       runId,
       sessionKey,
       state: "final",
-      message: { content: "complete response" },
+      message: { content: "first response" },
     });
 
-    // Verify that finalizeAssistant was called (the final response was rendered)
-    expect(chatLog.finalizeAssistant).toHaveBeenCalledWith("complete response", runId);
+    expect(chatLog.finalizeAssistant).toHaveBeenCalledWith("first response", runId);
+    chatLog.finalizeAssistant.mockClear();
+    setActivityStatus.mockClear();
+
+    // Now runId is in finalizedRuns. Send a second final event (simulating duplicate/retry).
+    // This should still be processed and render the response (the fix for #9203).
+    handleChatEvent({
+      runId,
+      sessionKey,
+      state: "final",
+      message: { content: "duplicate response" },
+    });
+
+    // Verify that finalizeAssistant was called again (the duplicate final event was processed)
+    expect(chatLog.finalizeAssistant).toHaveBeenCalledWith("duplicate response", runId);
     expect(setActivityStatus).toHaveBeenCalledWith("idle");
   });
 });
