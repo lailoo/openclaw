@@ -276,10 +276,9 @@ describe("compaction-safeguard extension cancels on failure (#10332)", () => {
   it("cancels compaction when summarization throws", async () => {
     // Mock summarizeInStages to throw, simulating API/model failure
     const compactionMod = await import("../compaction.js");
-    const originalFn = compactionMod.summarizeInStages;
-    vi.spyOn(compactionMod, "summarizeInStages").mockRejectedValue(
-      new Error("API connection failed"),
-    );
+    const spy = vi
+      .spyOn(compactionMod, "summarizeInStages")
+      .mockRejectedValue(new Error("API connection failed"));
 
     try {
       const handler = await captureHandler();
@@ -301,7 +300,7 @@ describe("compaction-safeguard extension cancels on failure (#10332)", () => {
       expect(result.cancel).toBe(true);
       expect(result.compaction).toBeUndefined();
     } finally {
-      vi.mocked(compactionMod.summarizeInStages).mockImplementation(originalFn);
+      spy.mockRestore();
     }
   });
 });
