@@ -35,6 +35,20 @@ describe("safeStat symlink handling", () => {
     expect(st.mode! & 0o777).toBe(0o600);
   });
 
+  it.skipIf(isWin)("preserves isSymlink for broken symlinks", async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-symlink-test-"));
+    dirs.push(tmp);
+
+    const missingTarget = path.join(tmp, "gone.json");
+    const link = path.join(tmp, "broken-link.json");
+    fs.symlinkSync(missingTarget, link);
+
+    const st = await safeStat(link);
+    expect(st.ok).toBe(false);
+    expect(st.isSymlink).toBe(true);
+    expect(st.error).toBeDefined();
+  });
+
   it.skipIf(isWin)("returns real file permissions for non-symlinks", async () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "openclaw-symlink-test-"));
     dirs.push(tmp);
