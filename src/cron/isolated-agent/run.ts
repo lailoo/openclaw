@@ -169,7 +169,7 @@ export async function runCronIsolatedAgentTurn(params: {
       ? agentConfigOverride.subagents.model.trim()
       : undefined) ||
     (typeof params.cfg.agents?.defaults?.subagents?.model === "string"
-      ? (params.cfg.agents.defaults.subagents.model as string).trim()
+      ? params.cfg.agents.defaults.subagents.model.trim()
       : undefined);
   if (subagentsModelRaw) {
     const subagentsResolved = resolveAllowedModelRef({
