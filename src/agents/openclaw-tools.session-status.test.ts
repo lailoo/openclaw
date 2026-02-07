@@ -274,4 +274,30 @@ describe("session_status tool", () => {
     expect(saved.modelOverride).toBeUndefined();
     expect(saved.authProfileOverride).toBeUndefined();
   });
+
+  it("displays session-level thinking level instead of falling back to off (#10867)", async () => {
+    loadSessionStoreMock.mockReset();
+    updateSessionStoreMock.mockReset();
+    loadSessionStoreMock.mockReturnValue({
+      main: {
+        sessionId: "s1",
+        updatedAt: 10,
+        thinkingLevel: "medium",
+      },
+    });
+
+    const tool = createOpenClawTools({ agentSessionKey: "main" }).find(
+      (candidate) => candidate.name === "session_status",
+    );
+    expect(tool).toBeDefined();
+    if (!tool) {
+      throw new Error("missing session_status tool");
+    }
+
+    const result = await tool.execute("call-think", {});
+    const details = result.details as { ok?: boolean; statusText?: string };
+    expect(details.ok).toBe(true);
+    expect(details.statusText).toContain("Think: medium");
+    expect(details.statusText).not.toContain("Think: off");
+  });
 });
