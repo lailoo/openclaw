@@ -161,6 +161,14 @@ function extractGrokContent(data: GrokSearchResponse): {
   return { text, annotationCitations: [] };
 }
 
+function extractGrokCitations(data: GrokSearchResponse): string[] {
+  const annotations = data.output?.[0]?.content?.[0]?.annotations;
+  if (!annotations?.length) {
+    return data.citations ?? [];
+  }
+  return annotations.filter((a) => a.type === "url_citation" && a.url).map((a) => a.url!);
+}
+
 function resolveSearchConfig(cfg?: OpenClawConfig): WebSearchConfig {
   const search = cfg?.tools?.web?.search;
   if (!search || typeof search !== "object") {
@@ -773,4 +781,5 @@ export const __testing = {
   resolveGrokModel,
   resolveGrokInlineCitations,
   extractGrokContent,
+  extractGrokCitations,
 } as const;
