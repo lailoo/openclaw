@@ -12,6 +12,7 @@ Docs: https://docs.openclaw.ai
 
 ### Fixes
 
+- Errors: include provider name in billing error messages when detectable from the raw error. (#14630)
 - Security: fix unauthenticated Nostr profile API remote config tampering. (#13719) Thanks @coygeek.
 - Gateway: raise WS payload/buffer limits so 5,000,000-byte image attachments work reliably. (#14486) Thanks @0xRaini.
 - Gateway: drain active turns before restart to prevent message loss. (#13931) Thanks @0xRaini.

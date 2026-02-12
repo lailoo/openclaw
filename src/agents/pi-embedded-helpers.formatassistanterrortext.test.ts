@@ -1,6 +1,10 @@
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import { describe, expect, it } from "vitest";
-import { BILLING_ERROR_USER_MESSAGE, formatAssistantErrorText } from "./pi-embedded-helpers.js";
+import {
+  BILLING_ERROR_USER_MESSAGE,
+  formatBillingErrorMessage,
+  formatAssistantErrorText,
+} from "./pi-embedded-helpers.js";
 
 describe("formatAssistantErrorText", () => {
   const makeAssistantError = (errorMessage: string): AssistantMessage =>
@@ -53,19 +57,47 @@ describe("formatAssistantErrorText", () => {
     );
     expect(formatAssistantErrorText(msg)).toBe("LLM error server_error: Something exploded");
   });
-  it("returns a friendly billing message for credit balance errors", () => {
+  it("returns a billing message with provider hint for Anthropic credit errors", () => {
     const msg = makeAssistantError("Your credit balance is too low to access the Anthropic API.");
     const result = formatAssistantErrorText(msg);
-    expect(result).toBe(BILLING_ERROR_USER_MESSAGE);
+    expect(result).toContain("Anthropic");
+    expect(result).toContain("billing error");
   });
-  it("returns a friendly billing message for HTTP 402 errors", () => {
+  it("returns a generic billing message for HTTP 402 errors without provider hint", () => {
     const msg = makeAssistantError("HTTP 402 Payment Required");
     const result = formatAssistantErrorText(msg);
     expect(result).toBe(BILLING_ERROR_USER_MESSAGE);
   });
-  it("returns a friendly billing message for insufficient credits", () => {
+  it("returns a generic billing message for insufficient credits without provider hint", () => {
     const msg = makeAssistantError("insufficient credits");
     const result = formatAssistantErrorText(msg);
     expect(result).toBe(BILLING_ERROR_USER_MESSAGE);
+  });
+});
+
+describe("formatBillingErrorMessage", () => {
+  it("includes provider name from raw error string", () => {
+    const result = formatBillingErrorMessage(
+      "Your credit balance is too low to access the Anthropic API.",
+    );
+    expect(result).toContain("Anthropic");
+    expect(result).toContain("billing error");
+  });
+  it("includes explicit provider parameter over raw hint", () => {
+    const result = formatBillingErrorMessage("some error from Anthropic", "OpenAI");
+    expect(result).toContain("OpenAI");
+    expect(result).not.toContain("Anthropic");
+  });
+  it("falls back to generic message when no provider hint", () => {
+    const result = formatBillingErrorMessage("insufficient credits");
+    expect(result).toBe(BILLING_ERROR_USER_MESSAGE);
+  });
+  it("detects OpenRouter in error string", () => {
+    const result = formatBillingErrorMessage("OpenRouter: insufficient balance");
+    expect(result).toContain("OpenRouter");
+  });
+  it("detects Google/Gemini in error string", () => {
+    const result = formatBillingErrorMessage("Gemini API quota exceeded");
+    expect(result).toContain("Google");
   });
 });

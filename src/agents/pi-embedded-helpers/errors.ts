@@ -6,6 +6,42 @@ import { formatSandboxToolPolicyBlockedMessage } from "../sandbox.js";
 export const BILLING_ERROR_USER_MESSAGE =
   "⚠️ API provider returned a billing error — your API key has run out of credits or has an insufficient balance. Check your provider's billing dashboard and top up or switch to a different API key.";
 
+const PROVIDER_HINTS: ReadonlyArray<{ pattern: RegExp; name: string }> = [
+  { pattern: /\banthropic\b/i, name: "Anthropic" },
+  { pattern: /\bopenai\b/i, name: "OpenAI" },
+  { pattern: /\bgoogle\b|\bgemini\b/i, name: "Google" },
+  { pattern: /\bmistral\b/i, name: "Mistral" },
+  { pattern: /\bcohere\b/i, name: "Cohere" },
+  { pattern: /\bopenrouter\b/i, name: "OpenRouter" },
+  { pattern: /\belevenlabs\b/i, name: "ElevenLabs" },
+  { pattern: /\bbedrock\b/i, name: "AWS Bedrock" },
+  { pattern: /\bazure\b/i, name: "Azure" },
+  { pattern: /\bgroq\b/i, name: "Groq" },
+  { pattern: /\btogether\b/i, name: "Together" },
+  { pattern: /\bperplexity\b/i, name: "Perplexity" },
+  { pattern: /\bdeepseek\b/i, name: "DeepSeek" },
+];
+
+function extractProviderHint(raw?: string): string | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  for (const { pattern, name } of PROVIDER_HINTS) {
+    if (pattern.test(raw)) {
+      return name;
+    }
+  }
+  return undefined;
+}
+
+export function formatBillingErrorMessage(raw?: string, provider?: string): string {
+  const hint = provider || extractProviderHint(raw);
+  if (hint) {
+    return `⚠️ API billing error from **${hint}** — your API key has run out of credits or has an insufficient balance. Check your ${hint} billing dashboard and top up or switch to a different API key.`;
+  }
+  return BILLING_ERROR_USER_MESSAGE;
+}
+
 export function isContextOverflowError(errorMessage?: string): boolean {
   if (!errorMessage) {
     return false;
@@ -450,7 +486,7 @@ export function formatAssistantErrorText(
   }
 
   if (isBillingErrorMessage(raw)) {
-    return BILLING_ERROR_USER_MESSAGE;
+    return formatBillingErrorMessage(raw);
   }
 
   if (isLikelyHttpErrorText(raw) || isRawApiErrorPayload(raw)) {
@@ -493,7 +529,7 @@ export function sanitizeUserFacingText(text: string, opts?: { errorContext?: boo
     }
 
     if (isBillingErrorMessage(trimmed)) {
-      return BILLING_ERROR_USER_MESSAGE;
+      return formatBillingErrorMessage(trimmed);
     }
 
     if (isRawApiErrorPayload(trimmed) || isLikelyHttpErrorText(trimmed)) {
