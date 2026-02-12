@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../agents/agent-scope.js", () => ({
   resolveDefaultAgentId: () => "main",
@@ -17,6 +17,11 @@ vi.mock("../agents/pi-embedded.js", () => ({
 import { generateSlugViaLLM } from "./llm-slug-generator.js";
 
 describe("generateSlugViaLLM", () => {
+  beforeEach(() => {
+    mockRunEmbeddedPiAgent.mockClear();
+    mockRunEmbeddedPiAgent.mockResolvedValue({ payloads: [{ text: "bug-fix" }] });
+  });
+
   it("passes configured primary model to runEmbeddedPiAgent (#14272)", async () => {
     const cfg = {
       agents: {
