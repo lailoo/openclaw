@@ -57,7 +57,7 @@ describe("BrowserToolSchema targetUrl consistency (#14700)", () => {
       .map((s) => s.description as string | undefined)
       .filter(Boolean);
     expect(descriptions.length).toBeGreaterThan(0);
-    expect(descriptions[0]).toMatch(/required.*open|open.*required/i);
+    expect(descriptions[0]).toMatch(/required.*open.*navigate|open.*navigate.*required/i);
   });
 
   it("execute(action:'open') error mentions the action name", async () => {
