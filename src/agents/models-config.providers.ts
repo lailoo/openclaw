@@ -63,6 +63,17 @@ const MOONSHOT_DEFAULT_COST = {
   cacheWrite: 0,
 };
 
+const ZAI_BASE_URL = "https://api.z.ai/api/coding/paas/v4";
+const ZAI_DEFAULT_MODEL_ID = "glm-5";
+const ZAI_DEFAULT_CONTEXT_WINDOW = 204800;
+const ZAI_DEFAULT_MAX_TOKENS = 131072;
+const ZAI_DEFAULT_COST = {
+  input: 0,
+  output: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+};
+
 const QWEN_PORTAL_BASE_URL = "https://portal.qwen.ai/v1";
 const QWEN_PORTAL_OAUTH_PLACEHOLDER = "qwen-oauth";
 const QWEN_PORTAL_DEFAULT_CONTEXT_WINDOW = 128000;
@@ -437,6 +448,42 @@ async function buildOllamaProvider(configuredBaseUrl?: string): Promise<Provider
   };
 }
 
+function buildZaiProvider(): ProviderConfig {
+  return {
+    baseUrl: ZAI_BASE_URL,
+    api: "openai-completions",
+    models: [
+      {
+        id: ZAI_DEFAULT_MODEL_ID,
+        name: "GLM-5",
+        reasoning: true,
+        input: ["text"],
+        cost: ZAI_DEFAULT_COST,
+        contextWindow: ZAI_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: ZAI_DEFAULT_MAX_TOKENS,
+      },
+      {
+        id: "glm-4.7",
+        name: "GLM-4.7",
+        reasoning: true,
+        input: ["text"],
+        cost: ZAI_DEFAULT_COST,
+        contextWindow: ZAI_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: ZAI_DEFAULT_MAX_TOKENS,
+      },
+      {
+        id: "glm-4.7-flash",
+        name: "GLM-4.7 Flash",
+        reasoning: true,
+        input: ["text"],
+        cost: ZAI_DEFAULT_COST,
+        contextWindow: ZAI_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: ZAI_DEFAULT_MAX_TOKENS,
+      },
+    ],
+  };
+}
+
 function buildTogetherProvider(): ProviderConfig {
   return {
     baseUrl: TOGETHER_BASE_URL,
@@ -586,6 +633,13 @@ export async function resolveImplicitProviders(params: {
     resolveApiKeyFromProfiles({ provider: "qianfan", store: authStore });
   if (qianfanKey) {
     providers.qianfan = { ...buildQianfanProvider(), apiKey: qianfanKey };
+  }
+
+  const zaiKey =
+    resolveEnvApiKeyVarName("zai") ??
+    resolveApiKeyFromProfiles({ provider: "zai", store: authStore });
+  if (zaiKey) {
+    providers.zai = { ...buildZaiProvider(), apiKey: zaiKey };
   }
 
   return providers;

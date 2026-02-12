@@ -149,6 +149,40 @@ function resolveAntigravityOpus46ForwardCompatModel(
   return undefined;
 }
 
+// pi-ai's built-in zai catalog can lag behind new GLM releases.
+// Forward-compat: clone from an older template model (glm-4.7) for known-new IDs.
+const ZAI_FORWARD_COMPAT_IDS = new Set(["glm-5", "glm-4.7-flashx"]);
+const ZAI_TEMPLATE_MODEL_IDS = ["glm-4.7", "glm-4.7-flash"] as const;
+
+function resolveZaiForwardCompatModel(
+  provider: string,
+  modelId: string,
+  modelRegistry: ModelRegistry,
+): Model<Api> | undefined {
+  const normalizedProvider = normalizeProviderId(provider);
+  if (normalizedProvider !== "zai") {
+    return undefined;
+  }
+  const trimmedModelId = modelId.trim();
+  if (!ZAI_FORWARD_COMPAT_IDS.has(trimmedModelId)) {
+    return undefined;
+  }
+
+  for (const templateId of ZAI_TEMPLATE_MODEL_IDS) {
+    const template = modelRegistry.find(normalizedProvider, templateId) as Model<Api> | null;
+    if (!template) {
+      continue;
+    }
+    return normalizeModelCompat({
+      ...template,
+      id: trimmedModelId,
+      name: trimmedModelId,
+    } as Model<Api>);
+  }
+
+  return undefined;
+}
+
 export function buildInlineProviderModels(
   providers: Record<string, InlineProviderConfig>,
 ): InlineModelEntry[] {
@@ -241,6 +275,10 @@ export function resolveModel(
     );
     if (antigravityForwardCompat) {
       return { model: antigravityForwardCompat, authStorage, modelRegistry };
+    }
+    const zaiForwardCompat = resolveZaiForwardCompatModel(provider, modelId, modelRegistry);
+    if (zaiForwardCompat) {
+      return { model: zaiForwardCompat, authStorage, modelRegistry };
     }
     const providerCfg = providers[provider];
     if (providerCfg || modelId.startsWith("mock-")) {
