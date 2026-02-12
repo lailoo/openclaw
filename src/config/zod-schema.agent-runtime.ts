@@ -434,6 +434,8 @@ export const AgentModelSchema = z.union([
     .object({
       primary: z.string().optional(),
       fallbacks: z.array(z.string()).optional(),
+      temperature: z.number().min(0).max(2).optional(),
+      maxTokens: z.number().int().positive().optional(),
     })
     .strict(),
 ]);

@@ -5,6 +5,7 @@ import {
   resolveAgentConfig,
   resolveAgentDir,
   resolveAgentModelFallbacksOverride,
+  resolveAgentModelParams,
   resolveAgentModelPrimary,
   resolveAgentWorkspaceDir,
 } from "./agent-scope.js";
@@ -214,6 +215,66 @@ describe("resolveAgentConfig", () => {
 
     const workspace = resolveAgentWorkspaceDir({} as OpenClawConfig, "main");
     expect(workspace).toBe(path.join(path.resolve(home), ".openclaw", "workspace"));
+  });
+
+  it("resolves per-agent temperature and maxTokens", () => {
+    const cfg: OpenClawConfig = {
+      agents: {
+        list: [
+          {
+            id: "developer",
+            model: {
+              primary: "anthropic/claude-opus-4",
+              temperature: 0.2,
+              maxTokens: 8192,
+            },
+          },
+        ],
+      },
+    };
+    const params = resolveAgentModelParams(cfg, "developer");
+    expect(params).toEqual({ temperature: 0.2, maxTokens: 8192 });
+  });
+
+  it("returns undefined when agent model is a string", () => {
+    const cfg: OpenClawConfig = {
+      agents: {
+        list: [{ id: "main", model: "anthropic/claude-opus-4" }],
+      },
+    };
+    expect(resolveAgentModelParams(cfg, "main")).toBeUndefined();
+  });
+
+  it("returns undefined when no temperature or maxTokens set", () => {
+    const cfg: OpenClawConfig = {
+      agents: {
+        list: [
+          {
+            id: "main",
+            model: { primary: "anthropic/claude-opus-4" },
+          },
+        ],
+      },
+    };
+    expect(resolveAgentModelParams(cfg, "main")).toBeUndefined();
+  });
+
+  it("resolves only temperature when maxTokens is not set", () => {
+    const cfg: OpenClawConfig = {
+      agents: {
+        list: [
+          {
+            id: "creative",
+            model: {
+              primary: "anthropic/claude-opus-4",
+              temperature: 1.5,
+            },
+          },
+        ],
+      },
+    };
+    const params = resolveAgentModelParams(cfg, "creative");
+    expect(params).toEqual({ temperature: 1.5 });
   });
 
   it("uses OPENCLAW_HOME for default agentDir", () => {

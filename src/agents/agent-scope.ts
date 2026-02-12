@@ -163,6 +163,24 @@ export function resolveAgentModelFallbacksOverride(
   return Array.isArray(raw.fallbacks) ? raw.fallbacks : undefined;
 }
 
+export function resolveAgentModelParams(
+  cfg: OpenClawConfig,
+  agentId: string,
+): Record<string, unknown> | undefined {
+  const raw = resolveAgentConfig(cfg, agentId)?.model;
+  if (!raw || typeof raw === "string") {
+    return undefined;
+  }
+  const params: Record<string, unknown> = {};
+  if (typeof raw.temperature === "number") {
+    params.temperature = raw.temperature;
+  }
+  if (typeof raw.maxTokens === "number") {
+    params.maxTokens = raw.maxTokens;
+  }
+  return Object.keys(params).length > 0 ? params : undefined;
+}
+
 export function resolveAgentWorkspaceDir(cfg: OpenClawConfig, agentId: string) {
   const id = normalizeAgentId(agentId);
   const configured = resolveAgentConfig(cfg, id)?.workspace?.trim();

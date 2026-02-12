@@ -19,7 +19,7 @@ import { resolveUserPath } from "../../../utils.js";
 import { normalizeMessageChannel } from "../../../utils/message-channel.js";
 import { isReasoningTagProvider } from "../../../utils/provider-utils.js";
 import { resolveOpenClawAgentDir } from "../../agent-paths.js";
-import { resolveSessionAgentIds } from "../../agent-scope.js";
+import { resolveAgentModelParams, resolveSessionAgentIds } from "../../agent-scope.js";
 import { createAnthropicPayloadLogger } from "../../anthropic-payload-log.js";
 import { makeBootstrapWarn, resolveBootstrapContextForRun } from "../../bootstrap-files.js";
 import { createCacheTrace } from "../../cache-trace.js";
@@ -523,13 +523,13 @@ export async function runEmbeddedAttempt(
       // Force a stable streamFn reference so vitest can reliably mock @mariozechner/pi-ai.
       activeSession.agent.streamFn = streamSimple;
 
-      applyExtraParamsToAgent(
-        activeSession.agent,
-        params.config,
-        params.provider,
-        params.modelId,
-        params.streamParams,
-      );
+      const agentModelParams = sessionAgentId
+        ? resolveAgentModelParams(params.config ?? {}, sessionAgentId)
+        : undefined;
+      applyExtraParamsToAgent(activeSession.agent, params.config, params.provider, params.modelId, {
+        ...agentModelParams,
+        ...params.streamParams,
+      });
 
       if (cacheTrace) {
         cacheTrace.recordStage("session:loaded", {

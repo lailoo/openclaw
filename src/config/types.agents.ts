@@ -16,6 +16,10 @@ export type AgentModelConfig =
       primary?: string;
       /** Per-agent model fallbacks (provider/model). */
       fallbacks?: string[];
+      /** Per-agent temperature override (0–2). */
+      temperature?: number;
+      /** Per-agent max output tokens override. */
+      maxTokens?: number;
     };
 
 export type AgentConfig = {
