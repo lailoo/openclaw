@@ -169,6 +169,36 @@ describe("resolveAgentRoute", () => {
     expect(route.matchedBy).toBe("binding.guild");
   });
 
+  test("peer+guild binding does not act as guild-wide fallback when peer mismatches (#14752)", () => {
+    const cfg: OpenClawConfig = {
+      bindings: [
+        {
+          agentId: "olga",
+          match: {
+            channel: "discord",
+            peer: { kind: "channel", id: "CHANNEL_A" },
+            guildId: "GUILD_1",
+          },
+        },
+        {
+          agentId: "main",
+          match: {
+            channel: "discord",
+            guildId: "GUILD_1",
+          },
+        },
+      ],
+    };
+    const route = resolveAgentRoute({
+      cfg,
+      channel: "discord",
+      peer: { kind: "channel", id: "CHANNEL_B" },
+      guildId: "GUILD_1",
+    });
+    expect(route.agentId).toBe("main");
+    expect(route.matchedBy).toBe("binding.guild");
+  });
+
   test("missing accountId in binding matches default account only", () => {
     const cfg: OpenClawConfig = {
       bindings: [{ agentId: "defaultAcct", match: { channel: "whatsapp" } }],
