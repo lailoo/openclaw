@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { AnyAgentTool } from "./pi-tools.types.js";
 import {
   assertRequiredParams,
   CLAUDE_PARAM_GROUPS,
   normalizeToolParams,
   wrapToolParamNormalization,
 } from "./pi-tools.read.js";
+import type { AnyAgentTool } from "./pi-tools.types.js";
 
 describe("assertRequiredParams", () => {
   describe("edit param groups", () => {
