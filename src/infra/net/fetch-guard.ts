@@ -1,4 +1,5 @@
 import type { Dispatcher } from "undici";
+import { fetch as undiciFetch } from "undici";
 import { logWarn } from "../../logger.js";
 import { bindAbortRelay } from "../../utils/fetch-timeout.js";
 import {
@@ -72,7 +73,7 @@ function buildAbortSignal(params: { timeoutMs?: number; signal?: AbortSignal }):
 }
 
 export async function fetchWithSsrFGuard(params: GuardedFetchOptions): Promise<GuardedFetchResult> {
-  const fetcher: FetchLike | undefined = params.fetchImpl ?? globalThis.fetch;
+  const fetcher: FetchLike | undefined = params.fetchImpl ?? undiciFetch;
   if (!fetcher) {
     throw new Error("fetch is not available");
   }
