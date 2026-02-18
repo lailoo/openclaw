@@ -8,8 +8,8 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { Logger } from "tslog";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { loadOpenClawPlugins } from "./loader.js";
 import type { PluginLogger } from "./types.js";
 
