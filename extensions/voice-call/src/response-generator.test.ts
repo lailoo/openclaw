@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import type { VoiceCallConfig } from "./config.js";
 
 const mockRunEmbeddedPiAgent = vi.fn().mockResolvedValue({
   payloads: [{ text: "Hello", isError: false }],
@@ -42,7 +43,7 @@ describe("voice-call response-generator thinkLevel (#22423)", () => {
     };
 
     await generateVoiceResponse({
-      voiceConfig: {},
+      voiceConfig: {} as VoiceCallConfig,
       coreConfig: cfg,
       callId: "test-call",
       from: "+1234567890",
