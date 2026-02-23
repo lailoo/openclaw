@@ -8,10 +8,14 @@ export type CacheTtlEntryData = {
   modelId?: string;
 };
 
+// Providers whose APIs support native context/prompt caching,
+// making cache-TTL-based context pruning effective.
+const CACHE_TTL_ELIGIBLE_PROVIDERS = new Set(["anthropic", "zai", "moonshot"]);
+
 export function isCacheTtlEligibleProvider(provider: string, modelId: string): boolean {
   const normalizedProvider = provider.toLowerCase();
   const normalizedModelId = modelId.toLowerCase();
-  if (normalizedProvider === "anthropic") {
+  if (CACHE_TTL_ELIGIBLE_PROVIDERS.has(normalizedProvider)) {
     return true;
   }
   if (normalizedProvider === "openrouter" && normalizedModelId.startsWith("anthropic/")) {
