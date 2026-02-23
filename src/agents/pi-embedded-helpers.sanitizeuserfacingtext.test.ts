@@ -14,6 +14,22 @@ describe("sanitizeUserFacingText", () => {
     expect(sanitizeUserFacingText("Hi <final>there</final>!")).toBe("Hi there!");
   });
 
+  it("strips reasoning/thinking tags so internal traces never reach the user", () => {
+    expect(sanitizeUserFacingText("<think>Planning next step</think>Hello")).toBe("Hello");
+    expect(sanitizeUserFacingText("<thinking>Clarifying reminder</thinking>Sure!")).toBe("Sure!");
+    expect(sanitizeUserFacingText("<thought>internal</thought>Answer")).toBe("Answer");
+    expect(sanitizeUserFacingText("<antthinking>plan</antthinking>Done")).toBe("Done");
+  });
+
+  it("strips reasoning tags that wrap the entire message", () => {
+    expect(sanitizeUserFacingText("<think>Planning apology and bug explanation</think>")).toBe("");
+  });
+
+  it("preserves reasoning tags inside code blocks", () => {
+    const code = "```\n<think>example</think>\n```";
+    expect(sanitizeUserFacingText(code)).toBe(code);
+  });
+
   it.each(["202 results found", "400 days left"])(
     "does not clobber normal numeric prefix: %s",
     (text) => {
