@@ -58,6 +58,10 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             version="${GITHUB_REF#refs/tags/v}"
             tags+=("${IMAGE}:${version}-amd64")
+            # Tag stable releases (no pre-release suffix) as latest
+            if [[ "${version}" != *-* ]]; then
+              tags+=("${IMAGE}:latest-amd64")
+            fi
           fi
           if [[ ${#tags[@]} -eq 0 ]]; then
             echo "::error::No amd64 tags resolved for ref ${GITHUB_REF}"
@@ -117,6 +121,10 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             version="${GITHUB_REF#refs/tags/v}"
             tags+=("${IMAGE}:${version}-arm64")
+            # Tag stable releases (no pre-release suffix) as latest
+            if [[ "${version}" != *-* ]]; then
+              tags+=("${IMAGE}:latest-arm64")
+            fi
           fi
           if [[ ${#tags[@]} -eq 0 ]]; then
             echo "::error::No arm64 tags resolved for ref ${GITHUB_REF}"
@@ -172,6 +180,10 @@ jobs:
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             version="${GITHUB_REF#refs/tags/v}"
             tags+=("${IMAGE}:${version}")
+            # Tag stable releases (no pre-release suffix) as latest
+            if [[ "${version}" != *-* ]]; then
+              tags+=("${IMAGE}:latest")
+            fi
           fi
           if [[ ${#tags[@]} -eq 0 ]]; then
             echo "::error::No manifest tags resolved for ref ${GITHUB_REF}"
