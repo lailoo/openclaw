@@ -37,22 +37,26 @@ if (
     process.env.FORCE_COLOR = "0";
   }
 
-  const EXPERIMENTAL_WARNING_FLAG = "--disable-warning=ExperimentalWarning";
+  const WARNING_SUPPRESSION_FLAGS = [
+    "--disable-warning=ExperimentalWarning",
+    "--disable-warning=DEP0040",
+  ];
 
-  function hasExperimentalWarningSuppressed(): boolean {
+  function hasWarningSuppressed(): boolean {
     const nodeOptions = process.env.NODE_OPTIONS ?? "";
-    if (nodeOptions.includes(EXPERIMENTAL_WARNING_FLAG) || nodeOptions.includes("--no-warnings")) {
+    if (nodeOptions.includes("--no-warnings")) {
       return true;
     }
     for (const arg of process.execArgv) {
-      if (arg === EXPERIMENTAL_WARNING_FLAG || arg === "--no-warnings") {
+      if (arg === "--no-warnings") {
         return true;
       }
     }
-    return false;
+    const present = new Set([...nodeOptions.split(/\s+/).filter(Boolean), ...process.execArgv]);
+    return WARNING_SUPPRESSION_FLAGS.every((flag) => present.has(flag));
   }
 
-  function ensureExperimentalWarningSuppressed(): boolean {
+  function ensureWarningSuppressed(): boolean {
     if (shouldSkipRespawnForArgv(process.argv)) {
       return false;
     }
@@ -62,16 +66,16 @@ if (
     if (isTruthyEnvValue(process.env.OPENCLAW_NODE_OPTIONS_READY)) {
       return false;
     }
-    if (hasExperimentalWarningSuppressed()) {
+    if (hasWarningSuppressed()) {
       return false;
     }
 
     // Respawn guard (and keep recursion bounded if something goes wrong).
     process.env.OPENCLAW_NODE_OPTIONS_READY = "1";
-    // Pass flag as a Node CLI option, not via NODE_OPTIONS (--disable-warning is disallowed in NODE_OPTIONS).
+    // Pass flags as Node CLI options, not via NODE_OPTIONS (--disable-warning is disallowed in NODE_OPTIONS).
     const child = spawn(
       process.execPath,
-      [EXPERIMENTAL_WARNING_FLAG, ...process.execArgv, ...process.argv.slice(1)],
+      [...WARNING_SUPPRESSION_FLAGS, ...process.execArgv, ...process.argv.slice(1)],
       {
         stdio: "inherit",
         env: process.env,
@@ -102,7 +106,7 @@ if (
 
   process.argv = normalizeWindowsArgv(process.argv);
 
-  if (!ensureExperimentalWarningSuppressed()) {
+  if (!ensureWarningSuppressed()) {
     const parsed = parseCliProfileArgs(process.argv);
     if (!parsed.ok) {
       // Keep it simple; Commander will handle rich help/errors after we strip flags.
