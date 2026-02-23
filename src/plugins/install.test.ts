@@ -167,7 +167,11 @@ function setupPluginInstallDirs() {
   return { tmpDir, pluginDir, extensionsDir };
 }
 
-function setupInstallPluginFromDirFixture(params?: { devDependencies?: Record<string, string> }) {
+function setupInstallPluginFromDirFixture(params?: {
+  devDependencies?: Record<string, string>;
+  peerDependencies?: Record<string, string>;
+  optionalDependencies?: Record<string, string>;
+}) {
   const workDir = makeTempDir();
   const stateDir = makeTempDir();
   const pluginDir = path.join(workDir, "plugin");
@@ -180,6 +184,10 @@ function setupInstallPluginFromDirFixture(params?: { devDependencies?: Record<st
       openclaw: { extensions: ["./dist/index.js"] },
       dependencies: { "left-pad": "1.3.0" },
       ...(params?.devDependencies ? { devDependencies: params.devDependencies } : {}),
+      ...(params?.peerDependencies ? { peerDependencies: params.peerDependencies } : {}),
+      ...(params?.optionalDependencies
+        ? { optionalDependencies: params.optionalDependencies }
+        : {}),
     }),
     "utf-8",
   );
@@ -512,6 +520,80 @@ describe("installPluginFromDir", () => {
     };
     expect(manifest.devDependencies?.openclaw).toBeUndefined();
     expect(manifest.devDependencies?.vitest).toBe("^3.0.0");
+  });
+
+  it("strips workspace peerDependencies before npm install", async () => {
+    const { pluginDir, extensionsDir } = setupInstallPluginFromDirFixture({
+      peerDependencies: {
+        openclaw: "workspace:*",
+        "some-peer": "^1.0.0",
+      },
+    });
+
+    const run = vi.mocked(runCommandWithTimeout);
+    run.mockResolvedValue({
+      code: 0,
+      stdout: "",
+      stderr: "",
+      signal: null,
+      killed: false,
+      termination: "exit",
+    });
+
+    const res = await installPluginFromDir({
+      dirPath: pluginDir,
+      extensionsDir,
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(res.targetDir, "package.json"), "utf-8"),
+    ) as {
+      peerDependencies?: Record<string, string>;
+    };
+    expect(manifest.peerDependencies?.openclaw).toBeUndefined();
+    expect(manifest.peerDependencies?.["some-peer"]).toBe("^1.0.0");
+  });
+
+  it("strips workspace deps from multiple fields at once", async () => {
+    const { pluginDir, extensionsDir } = setupInstallPluginFromDirFixture({
+      devDependencies: { openclaw: "workspace:*" },
+      peerDependencies: { openclaw: "workspace:*" },
+      optionalDependencies: { "extra-tool": "workspace:^" },
+    });
+
+    const run = vi.mocked(runCommandWithTimeout);
+    run.mockResolvedValue({
+      code: 0,
+      stdout: "",
+      stderr: "",
+      signal: null,
+      killed: false,
+      termination: "exit",
+    });
+
+    const res = await installPluginFromDir({
+      dirPath: pluginDir,
+      extensionsDir,
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) {
+      return;
+    }
+
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(res.targetDir, "package.json"), "utf-8"),
+    ) as {
+      devDependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
+      optionalDependencies?: Record<string, string>;
+    };
+    expect(manifest.devDependencies).toBeUndefined();
+    expect(manifest.peerDependencies).toBeUndefined();
+    expect(manifest.optionalDependencies).toBeUndefined();
   });
 });
 

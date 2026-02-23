@@ -7,6 +7,15 @@ function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+// Strip workspace: protocol entries from all dependency fields so npm install
+// never encounters the pnpm-only protocol (see #24578).
+const SANITIZED_DEP_FIELDS = [
+  "dependencies",
+  "devDependencies",
+  "peerDependencies",
+  "optionalDependencies",
+] as const;
+
 async function sanitizeManifestForNpmInstall(targetDir: string): Promise<void> {
   const manifestPath = path.join(targetDir, "package.json");
   let manifestRaw = "";
@@ -27,25 +36,32 @@ async function sanitizeManifestForNpmInstall(targetDir: string): Promise<void> {
     return;
   }
 
-  const devDependencies = manifest.devDependencies;
-  if (!isObjectRecord(devDependencies)) {
-    return;
+  let changed = false;
+  for (const field of SANITIZED_DEP_FIELDS) {
+    const deps = manifest[field];
+    if (!isObjectRecord(deps)) {
+      continue;
+    }
+
+    const filteredEntries = Object.entries(deps).filter(([, rawSpec]) => {
+      const spec = typeof rawSpec === "string" ? rawSpec.trim() : "";
+      return !spec.startsWith("workspace:");
+    });
+    if (filteredEntries.length === Object.keys(deps).length) {
+      continue;
+    }
+
+    changed = true;
+    if (filteredEntries.length === 0) {
+      delete manifest[field];
+    } else {
+      manifest[field] = Object.fromEntries(filteredEntries);
+    }
   }
 
-  const filteredEntries = Object.entries(devDependencies).filter(([, rawSpec]) => {
-    const spec = typeof rawSpec === "string" ? rawSpec.trim() : "";
-    return !spec.startsWith("workspace:");
-  });
-  if (filteredEntries.length === Object.keys(devDependencies).length) {
-    return;
+  if (changed) {
+    await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
   }
-
-  if (filteredEntries.length === 0) {
-    delete manifest.devDependencies;
-  } else {
-    manifest.devDependencies = Object.fromEntries(filteredEntries);
-  }
-  await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
 }
 
 export async function installPackageDir(params: {
