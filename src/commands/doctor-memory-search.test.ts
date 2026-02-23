@@ -126,6 +126,38 @@ describe("noteMemorySearchHealth", () => {
     });
     expect(note).not.toHaveBeenCalled();
   });
+
+  it("suggests valid CLI commands when provider key is missing (#24220)", async () => {
+    resolveMemorySearchConfig.mockReturnValue({
+      provider: "openai",
+      local: {},
+      remote: {},
+    });
+    resolveApiKeyForProvider.mockRejectedValue(new Error("no key"));
+
+    await noteMemorySearchHealth(cfg);
+
+    expect(note).toHaveBeenCalledTimes(1);
+    const message = note.mock.calls[0][0] as string;
+    expect(message).not.toContain("openclaw auth add");
+    expect(message).toContain("openclaw onboard");
+  });
+
+  it("suggests valid CLI commands in auto mode when all keys are missing (#24220)", async () => {
+    resolveMemorySearchConfig.mockReturnValue({
+      provider: "auto",
+      local: {},
+      remote: {},
+    });
+    resolveApiKeyForProvider.mockRejectedValue(new Error("no key"));
+
+    await noteMemorySearchHealth(cfg);
+
+    expect(note).toHaveBeenCalledTimes(1);
+    const message = note.mock.calls[0][0] as string;
+    expect(message).not.toContain("openclaw auth add");
+    expect(message).toContain("openclaw onboard");
+  });
 });
 
 describe("detectLegacyWorkspaceDirs", () => {
