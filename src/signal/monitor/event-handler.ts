@@ -489,6 +489,19 @@ export function createSignalEventHandler(deps: SignalEventHandlerDeps) {
       return;
     }
 
+    // Skip expiration timer update messages (disappearing messages setting changes).
+    // These have expiresInSeconds but no actual user content.
+    if (
+      typeof dataMessage.expiresInSeconds === "number" &&
+      !messageText &&
+      !quoteText &&
+      !dataMessage.attachments?.length &&
+      !reaction
+    ) {
+      logVerbose(`signal: ignoring expiration timer update from ${senderDisplay}`);
+      return;
+    }
+
     const senderRecipient = resolveSignalRecipient(sender);
     const senderPeerId = resolveSignalPeerId(sender);
     const senderAllowId = formatSignalSenderId(sender);

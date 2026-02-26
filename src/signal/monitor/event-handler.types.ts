@@ -27,6 +27,7 @@ export type SignalMention = {
 export type SignalDataMessage = {
   timestamp?: number;
   message?: string | null;
+  expiresInSeconds?: number;
   attachments?: Array<SignalAttachment>;
   mentions?: Array<SignalMention> | null;
   groupInfo?: {
