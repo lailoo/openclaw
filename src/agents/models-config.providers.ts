@@ -962,12 +962,22 @@ export async function resolveImplicitProviders(params: {
   // Ollama provider - only add if explicitly configured.
   // Use the user's configured baseUrl (from explicit providers) for model
   // discovery so that remote / non-default Ollama instances are reachable.
+  // Skip discovery when explicit models are already defined.
   const ollamaKey =
     resolveEnvApiKeyVarName("ollama") ??
     resolveApiKeyFromProfiles({ provider: "ollama", store: authStore });
   if (ollamaKey) {
-    const ollamaBaseUrl = params.explicitProviders?.ollama?.baseUrl;
-    providers.ollama = { ...(await buildOllamaProvider(ollamaBaseUrl)), apiKey: ollamaKey };
+    const explicitOllama = params.explicitProviders?.ollama;
+    const hasExplicitModels =
+      Array.isArray(explicitOllama?.models) && explicitOllama.models.length > 0;
+    if (hasExplicitModels) {
+      // Use explicit models as-is, skip discovery
+      providers.ollama = { api: "ollama", ...explicitOllama, apiKey: ollamaKey };
+    } else {
+      // Run discovery for implicit models
+      const ollamaBaseUrl = explicitOllama?.baseUrl;
+      providers.ollama = { ...(await buildOllamaProvider(ollamaBaseUrl)), apiKey: ollamaKey };
+    }
   }
 
   // vLLM provider - OpenAI-compatible local server (opt-in via env/profile).
