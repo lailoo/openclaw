@@ -49,6 +49,37 @@ describe("FS tools with workspaceOnly=false", () => {
     expect(content).toBe("test content");
   });
 
+  it("should allow write outside workspace via ../ path when workspaceOnly=false", async () => {
+    const relativeOutsidePath = path.join("..", "outside-relative-write.txt");
+    const outsideRelativeFile = path.join(tmpDir, "outside-relative-write.txt");
+
+    const tools = createOpenClawCodingTools({
+      workspaceDir,
+      config: {
+        tools: {
+          fs: {
+            workspaceOnly: false,
+          },
+        },
+      },
+    });
+
+    const writeTool = tools.find((t) => t.name === "write");
+    expect(writeTool).toBeDefined();
+
+    const result = await writeTool!.execute("test-call-1b", {
+      path: relativeOutsidePath,
+      content: "relative test content",
+    });
+
+    const hasError = result.content.some(
+      (c) => c.type === "text" && c.text.toLowerCase().includes("error"),
+    );
+    expect(hasError).toBe(false);
+    const content = await fs.readFile(outsideRelativeFile, "utf-8");
+    expect(content).toBe("relative test content");
+  });
+
   it("should allow edit outside workspace when workspaceOnly=false", async () => {
     await fs.writeFile(outsideFile, "old content");
 
@@ -79,6 +110,39 @@ describe("FS tools with workspaceOnly=false", () => {
     expect(hasError).toBe(false);
     const content = await fs.readFile(outsideFile, "utf-8");
     expect(content).toBe("new content");
+  });
+
+  it("should allow edit outside workspace via ../ path when workspaceOnly=false", async () => {
+    const relativeOutsidePath = path.join("..", "outside-relative-edit.txt");
+    const outsideRelativeFile = path.join(tmpDir, "outside-relative-edit.txt");
+    await fs.writeFile(outsideRelativeFile, "old relative content");
+
+    const tools = createOpenClawCodingTools({
+      workspaceDir,
+      config: {
+        tools: {
+          fs: {
+            workspaceOnly: false,
+          },
+        },
+      },
+    });
+
+    const editTool = tools.find((t) => t.name === "edit");
+    expect(editTool).toBeDefined();
+
+    const result = await editTool!.execute("test-call-2b", {
+      path: relativeOutsidePath,
+      oldText: "old relative content",
+      newText: "new relative content",
+    });
+
+    const hasError = result.content.some(
+      (c) => c.type === "text" && c.text.toLowerCase().includes("error"),
+    );
+    expect(hasError).toBe(false);
+    const content = await fs.readFile(outsideRelativeFile, "utf-8");
+    expect(content).toBe("new relative content");
   });
 
   it("should allow read outside workspace when workspaceOnly=false", async () => {
