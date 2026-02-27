@@ -5,6 +5,7 @@ import { resolveApiKeyForProvider } from "../agents/model-auth.js";
 import { formatCliCommand } from "../cli/command-format.js";
 import type { OpenClawConfig } from "../config/config.js";
 import { resolveMemoryBackendConfig } from "../memory/backend-config.js";
+import { importNodeLlamaCpp } from "../memory/node-llama.js";
 import { note } from "../terminal/note.js";
 import { resolveUserPath } from "../utils.js";
 
@@ -42,7 +43,7 @@ export async function noteMemorySearchHealth(
   // If a specific provider is configured (not "auto"), check only that one.
   if (resolved.provider !== "auto") {
     if (resolved.provider === "local") {
-      if (hasLocalEmbeddings(resolved.local)) {
+      if (await hasLocalEmbeddings(resolved.local)) {
         return; // local model file exists
       }
       note(
@@ -95,7 +96,7 @@ export async function noteMemorySearchHealth(
   }
 
   // provider === "auto": check all providers in resolution order
-  if (hasLocalEmbeddings(resolved.local)) {
+  if (await hasLocalEmbeddings(resolved.local)) {
     return;
   }
   for (const provider of ["openai", "gemini", "voyage", "mistral"] as const) {
@@ -135,10 +136,18 @@ export async function noteMemorySearchHealth(
   );
 }
 
-function hasLocalEmbeddings(local: { modelPath?: string }): boolean {
+async function hasLocalEmbeddings(local: { modelPath?: string }): Promise<boolean> {
   const modelPath = local.modelPath?.trim();
   if (!modelPath) {
-    return false;
+    // No explicit model path — the runtime falls back to a default hf: model
+    // resolved by node-llama-cpp from its own cache. If node-llama-cpp is
+    // importable the default model will be downloaded/resolved at runtime.
+    try {
+      await importNodeLlamaCpp();
+      return true;
+    } catch {
+      return false;
+    }
   }
   // Remote/downloadable models (hf: or http:) aren't pre-resolved on disk,
   // so we can't confirm availability without a network call. Treat as

@@ -8,6 +8,7 @@ const resolveAgentDir = vi.hoisted(() => vi.fn(() => "/tmp/agent-default"));
 const resolveMemorySearchConfig = vi.hoisted(() => vi.fn());
 const resolveApiKeyForProvider = vi.hoisted(() => vi.fn());
 const resolveMemoryBackendConfig = vi.hoisted(() => vi.fn());
+const importNodeLlamaCpp = vi.hoisted(() => vi.fn());
 
 vi.mock("../terminal/note.js", () => ({
   note,
@@ -28,6 +29,10 @@ vi.mock("../agents/model-auth.js", () => ({
 
 vi.mock("../memory/backend-config.js", () => ({
   resolveMemoryBackendConfig,
+}));
+
+vi.mock("../memory/node-llama.js", () => ({
+  importNodeLlamaCpp,
 }));
 
 import { noteMemorySearchHealth } from "./doctor-memory-search.js";
@@ -58,6 +63,8 @@ describe("noteMemorySearchHealth", () => {
     resolveApiKeyForProvider.mockRejectedValue(new Error("missing key"));
     resolveMemoryBackendConfig.mockReset();
     resolveMemoryBackendConfig.mockReturnValue({ backend: "builtin", citations: "auto" });
+    importNodeLlamaCpp.mockReset();
+    importNodeLlamaCpp.mockRejectedValue(new Error("ERR_MODULE_NOT_FOUND"));
   });
 
   it("does not warn when QMD backend is active", async () => {
@@ -177,6 +184,46 @@ describe("noteMemorySearchHealth", () => {
     const message = String(note.mock.calls[0]?.[0] ?? "");
     expect(message).toContain("openclaw configure --section model");
     expect(message).not.toContain("openclaw auth add --provider");
+  });
+  it("does not warn when provider is local with no modelPath but node-llama-cpp is available", async () => {
+    importNodeLlamaCpp.mockResolvedValue({});
+    resolveMemorySearchConfig.mockReturnValue({
+      provider: "local",
+      local: {},
+      remote: {},
+    });
+
+    await noteMemorySearchHealth(cfg);
+
+    expect(note).not.toHaveBeenCalled();
+  });
+
+  it("warns when provider is local with no modelPath and node-llama-cpp is missing", async () => {
+    importNodeLlamaCpp.mockRejectedValue(new Error("ERR_MODULE_NOT_FOUND"));
+    resolveMemorySearchConfig.mockReturnValue({
+      provider: "local",
+      local: {},
+      remote: {},
+    });
+
+    await noteMemorySearchHealth(cfg);
+
+    expect(note).toHaveBeenCalledTimes(1);
+    const message = note.mock.calls[0]?.[0] as string;
+    expect(message).toContain("no local model file was found");
+  });
+
+  it("does not warn in auto mode with no modelPath when node-llama-cpp is available", async () => {
+    importNodeLlamaCpp.mockResolvedValue({});
+    resolveMemorySearchConfig.mockReturnValue({
+      provider: "auto",
+      local: {},
+      remote: {},
+    });
+
+    await noteMemorySearchHealth(cfg);
+
+    expect(note).not.toHaveBeenCalled();
   });
 });
 
