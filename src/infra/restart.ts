@@ -2,13 +2,14 @@ import { spawnSync } from "node:child_process";
 import {
   resolveGatewayLaunchAgentLabel,
   resolveGatewaySystemdServiceName,
+  resolveGatewayWindowsTaskName,
 } from "../daemon/constants.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { cleanStaleGatewayProcessesSync, findGatewayPidsOnPortSync } from "./restart-stale-pids.js";
 
 export type RestartAttempt = {
   ok: boolean;
-  method: "launchctl" | "systemd" | "supervisor";
+  method: "launchctl" | "systemd" | "schtasks" | "supervisor";
   detail?: string;
   tried?: string[];
 };
@@ -323,6 +324,30 @@ export function triggerOpenClawRestart(): RestartAttempt {
         `system: ${formatSpawnDetail(systemRestart)}`,
       ].join("; ");
       return { ok: false, method: "systemd", detail, tried };
+    }
+    if (process.platform === "win32") {
+      const taskName =
+        process.env.OPENCLAW_WINDOWS_TASK_NAME?.trim() ||
+        resolveGatewayWindowsTaskName(process.env.OPENCLAW_PROFILE);
+      const endArgs = ["/End", "/TN", taskName];
+      tried.push(`schtasks ${endArgs.join(" ")}`);
+      // /End may fail if the task is not running; that's acceptable.
+      spawnSync("schtasks", endArgs, { encoding: "utf8", timeout: SPAWN_TIMEOUT_MS });
+      const runArgs = ["/Run", "/TN", taskName];
+      tried.push(`schtasks ${runArgs.join(" ")}`);
+      const runResult = spawnSync("schtasks", runArgs, {
+        encoding: "utf8",
+        timeout: SPAWN_TIMEOUT_MS,
+      });
+      if (!runResult.error && runResult.status === 0) {
+        return { ok: true, method: "schtasks", tried };
+      }
+      return {
+        ok: false,
+        method: "schtasks",
+        detail: formatSpawnDetail(runResult),
+        tried,
+      };
     }
     return {
       ok: false,

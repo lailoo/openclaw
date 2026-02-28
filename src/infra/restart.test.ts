@@ -16,11 +16,26 @@ vi.mock("../config/paths.js", () => ({
   resolveGatewayPort: (...args: unknown[]) => resolveGatewayPortMock(...args),
 }));
 
+import { captureFullEnv } from "../test-utils/env.js";
 import {
   __testing,
   cleanStaleGatewayProcessesSync,
   findGatewayPidsOnPortSync,
 } from "./restart-stale-pids.js";
+import { triggerOpenClawRestart } from "./restart.js";
+
+const envSnapshot = captureFullEnv();
+const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(process, "platform");
+
+function setPlatform(platform: string) {
+  if (!originalPlatformDescriptor) {
+    return;
+  }
+  Object.defineProperty(process, "platform", {
+    ...originalPlatformDescriptor,
+    value: platform,
+  });
+}
 
 beforeEach(() => {
   spawnSyncMock.mockReset();
@@ -34,6 +49,10 @@ beforeEach(() => {
 
 afterEach(() => {
   __testing.setSleepSyncOverride(null);
+  envSnapshot.restore();
+  if (originalPlatformDescriptor) {
+    Object.defineProperty(process, "platform", originalPlatformDescriptor);
+  }
   vi.restoreAllMocks();
 });
 
@@ -107,5 +126,57 @@ describe.runIf(process.platform !== "win32")("cleanStaleGatewayProcessesSync", (
 
     expect(killed).toEqual([]);
     expect(killSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("triggerOpenClawRestart on win32", () => {
+  beforeEach(() => {
+    // Bypass the test-mode early return so we exercise the real platform branches.
+    delete process.env.VITEST;
+    delete process.env.NODE_ENV;
+    setPlatform("win32");
+  });
+
+  it("calls schtasks /End then /Run and returns ok on success", () => {
+    // On win32, cleanStaleGatewayProcessesSync skips lsof (returns [] immediately),
+    // so the first spawnSync call is schtasks /End, second is schtasks /Run.
+    spawnSyncMock
+      .mockReturnValueOnce({ error: undefined, status: 0, stdout: "", stderr: "" }) // /End
+      .mockReturnValueOnce({ error: undefined, status: 0, stdout: "SUCCESS", stderr: "" }); // /Run
+
+    const result = triggerOpenClawRestart();
+
+    expect(result.ok).toBe(true);
+    expect(result.method).toBe("schtasks");
+    expect(result.tried).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("schtasks /End"),
+        expect.stringContaining("schtasks /Run"),
+      ]),
+    );
+  });
+
+  it("returns failure when schtasks /Run fails", () => {
+    spawnSyncMock
+      .mockReturnValueOnce({ error: undefined, status: 0, stdout: "", stderr: "" }) // /End
+      .mockReturnValueOnce({ error: undefined, status: 1, stdout: "", stderr: "access denied" }); // /Run
+
+    const result = triggerOpenClawRestart();
+
+    expect(result.ok).toBe(false);
+    expect(result.method).toBe("schtasks");
+    expect(result.detail).toContain("access denied");
+  });
+
+  it("uses OPENCLAW_WINDOWS_TASK_NAME env override", () => {
+    process.env.OPENCLAW_WINDOWS_TASK_NAME = "MyCustomTask";
+    spawnSyncMock
+      .mockReturnValueOnce({ error: undefined, status: 0, stdout: "", stderr: "" }) // /End
+      .mockReturnValueOnce({ error: undefined, status: 0, stdout: "SUCCESS", stderr: "" }); // /Run
+
+    const result = triggerOpenClawRestart();
+
+    expect(result.ok).toBe(true);
+    expect(result.tried).toEqual(expect.arrayContaining([expect.stringContaining("MyCustomTask")]));
   });
 });
