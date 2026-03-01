@@ -275,7 +275,6 @@ describe("slack prepareSlackMessage inbound contract", () => {
       attachments: [
         {
           text: "Readiness probe failed: Get http://10.42.13.132:8000/status: context deadline exceeded",
-          title: "[K8S] Unhealthy: Pod/apprise-78447f9d-7ndvj",
         },
       ],
     });
